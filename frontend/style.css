@@ -1,4 +1,4 @@
-:root {
+:root- {
     --primary-color: #6366f1;
     --primary-hover: #4f46e5;
     --accent-color: #f43f5e;
@@ -123,8 +123,15 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .tab-header {
@@ -253,14 +260,19 @@ body {
     transition: var(--transition);
 }
 
-.wizard-step.active { color: var(--primary-color); }
-.wizard-step.done { color: #10b981; }
+.wizard-step.active {
+    color: var(--primary-color);
+}
+
+.wizard-step.done {
+    color: #10b981;
+}
 
 .step-num {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     border: 2px solid currentColor;
     display: flex;
     align-items: center;
@@ -282,7 +294,9 @@ body {
     animation: fadeIn 0.4s ease;
 }
 
-.wizard-panel.active { display: block; }
+.wizard-panel.active {
+    display: block;
+}
 
 /* ─── Step 1: Plan Form ─── */
 .plan-form-grid {
@@ -292,8 +306,15 @@ body {
     margin-bottom: 2rem;
 }
 
-.plan-field { display: flex; flex-direction: column; gap: 0.5rem; }
-.plan-field.full-width { grid-column: 1 / -1; }
+.plan-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.plan-field.full-width {
+    grid-column: 1 / -1;
+}
 
 .plan-field label {
     font-size: 0.85rem;
@@ -301,7 +322,10 @@ body {
     color: var(--text-muted);
 }
 
-.plan-field label i { margin-right: 0.4rem; color: var(--primary-color); }
+.plan-field label i {
+    margin-right: 0.4rem;
+    color: var(--primary-color);
+}
 
 .plan-input {
     padding: 0.85rem 1.1rem;
@@ -316,8 +340,13 @@ body {
     width: 100%;
 }
 
-.plan-input:focus { border-color: var(--primary-color); }
-.plan-input option { background: #1e293b; }
+.plan-input:focus {
+    border-color: var(--primary-color);
+}
+
+.plan-input option {
+    background: #1e293b;
+}
 
 .destination-chips {
     display: flex;
@@ -337,8 +366,16 @@ body {
     color: var(--text-muted);
 }
 
-.dest-chip:hover { border-color: var(--primary-color); color: white; }
-.dest-chip.active { background: var(--primary-color); border-color: var(--primary-color); color: white; }
+.dest-chip:hover {
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.dest-chip.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
 
 /* ─── Step 2: Style Grid ─── */
 .style-grid {
@@ -358,12 +395,31 @@ body {
     transition: var(--transition);
 }
 
-.style-card:hover { border-color: var(--primary-color); transform: translateY(-4px); }
-.style-card.selected { border-color: var(--primary-color); background: rgba(99,102,241,0.12); }
+.style-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-4px);
+}
 
-.style-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
-.style-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
-.style-card p { font-size: 0.8rem; color: var(--text-muted); }
+.style-card.selected {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.12);
+}
+
+.style-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.style-card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.style-card p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
 
 /* ─── Step 3: Constraints ─── */
 .constraint-grid {
@@ -388,10 +444,22 @@ body {
     font-weight: 600;
 }
 
-.constraint-card input[type="checkbox"] { display: none; }
-.constraint-card:hover { border-color: var(--primary-color); }
-.constraint-card:has(input:checked) { border-color: var(--primary-color); background: rgba(99,102,241,0.12); }
-.constraint-icon { font-size: 2rem; }
+.constraint-card input[type="checkbox"] {
+    display: none;
+}
+
+.constraint-card:hover {
+    border-color: var(--primary-color);
+}
+
+.constraint-card:has(input:checked) {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.12);
+}
+
+.constraint-icon {
+    font-size: 2rem;
+}
 
 /* ─── Wizard Navigation ─── */
 .wizard-nav {
@@ -407,7 +475,7 @@ body {
     background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
     font-size: 1rem;
     padding: 0.9rem 2rem;
-    box-shadow: 0 4px 20px rgba(99,102,241,0.3);
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
 }
 
 /* ─── Itinerary Output ─── */
@@ -423,8 +491,15 @@ body {
     gap: 1.5rem;
 }
 
-.itinerary-hero h2 { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; }
-.itinerary-hero p { opacity: 0.85; }
+.itinerary-hero h2 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+.itinerary-hero p {
+    opacity: 0.85;
+}
 
 .budget-pills {
     display: flex;
@@ -434,7 +509,7 @@ body {
 }
 
 .budget-pill {
-    background: rgba(255,255,255,0.15);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 12px;
     padding: 0.4rem 0.9rem;
     font-size: 0.85rem;
@@ -456,8 +531,8 @@ body {
 
 .constraint-badge {
     padding: 0.35rem 0.9rem;
-    background: rgba(16,185,129,0.15);
-    border: 1px solid rgba(16,185,129,0.4);
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.4);
     color: #10b981;
     border-radius: 20px;
     font-size: 0.8rem;
@@ -475,11 +550,25 @@ body {
     align-items: center;
 }
 
-.hotel-card h4 { font-size: 1.1rem; font-weight: 700; }
-.hotel-card p { color: var(--text-muted); font-size: 0.85rem; }
-.hotel-card .price-tag { font-size: 1.25rem; font-weight: 800; color: var(--primary-color); }
+.hotel-card h4 {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
 
-.day-block { margin-bottom: 2rem; }
+.hotel-card p {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.hotel-card .price-tag {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--primary-color);
+}
+
+.day-block {
+    margin-bottom: 2rem;
+}
 
 .day-label {
     display: flex;
@@ -488,8 +577,15 @@ body {
     margin-bottom: 1rem;
 }
 
-.day-label h3 { font-size: 1.2rem; font-weight: 800; }
-.day-label .day-date { font-size: 0.85rem; color: var(--text-muted); }
+.day-label h3 {
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+.day-label .day-date {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
 
 .itinerary-timeline {
     border-left: 2px solid var(--glass-border);
@@ -509,7 +605,9 @@ body {
     transition: var(--transition);
 }
 
-.itin-item:hover { border-color: var(--primary-color); }
+.itin-item:hover {
+    border-color: var(--primary-color);
+}
 
 .itin-item::before {
     content: '';
@@ -530,20 +628,52 @@ body {
     margin-bottom: 0.4rem;
 }
 
-.itin-time { color: var(--primary-color); font-size: 0.8rem; font-weight: 700; }
+.itin-time {
+    color: var(--primary-color);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
 .itin-status {
     font-size: 0.7rem;
     padding: 0.2rem 0.6rem;
     border-radius: 6px;
     font-weight: 600;
 }
-.itin-status.confirmed { background: rgba(16,185,129,0.15); color: #10b981; }
-.itin-status.pending { background: rgba(251,191,36,0.15); color: #fbbf24; }
 
-.itin-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.3rem; }
-.itin-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; }
-.itin-location { color: var(--text-muted); font-size: 0.82rem; }
-.itin-cost { font-weight: 700; color: var(--primary-color); font-size: 0.9rem; }
+.itin-status.confirmed {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+}
+
+.itin-status.pending {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+}
+
+.itin-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+}
+
+.itin-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.itin-location {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.itin-cost {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 0.9rem;
+}
 
 .timeline-item {
     position: relative;
@@ -624,7 +754,10 @@ body {
     opacity: 0.3;
 }
 
-.empty-state h3 { margin-bottom: 1rem; color: white; }
+.empty-state h3 {
+    margin-bottom: 1rem;
+    color: white;
+}
 
 /* Security Tab Styles */
 .security-grid {
@@ -683,7 +816,7 @@ body {
     height: 26px;
 }
 
-.switch input { 
+.switch input {
     opacity: 0;
     width: 0;
     height: 0;
@@ -711,15 +844,15 @@ body {
     transition: .4s;
 }
 
-input:checked + .slider {
+input:checked+.slider {
     background-color: var(--primary-color);
 }
 
-input:focus + .slider {
+input:focus+.slider {
     box-shadow: 0 0 1px var(--primary-color);
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
     transform: translateX(24px);
 }
 
@@ -763,8 +896,15 @@ input:checked + .slider:before {
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .login-header {
@@ -914,4 +1054,13 @@ input:checked + .slider:before {
     color: var(--primary-color);
     text-decoration: none;
     font-weight: 600;
+}
+.auth-error {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #f87171;
+    border-radius: 10px;
+    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
 }

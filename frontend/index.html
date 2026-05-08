@@ -27,14 +27,19 @@
             </div>
 
             <form id="login-form">
+                <div class="input-group" id="name-field" style="display:none;">
+                    <label>Display Name</label>
+                    <input type="text" id="auth-name" placeholder="Your name">
+                </div>
                 <div class="input-group">
-                    <label>Username or Email</label>
-                    <input type="text" placeholder="Enter your handle" required>
+                    <label>Email Address</label>
+                    <input type="email" id="auth-email" placeholder="you@example.com" required>
                 </div>
                 <div class="input-group">
                     <label>Password</label>
-                    <input type="password" placeholder="••••••••" required>
+                    <input type="password" id="auth-password" placeholder="••••••••" required minlength="6">
                 </div>
+                <div id="auth-error" class="auth-error" style="display:none;"></div>
                 <button type="submit" class="btn-primary login-btn">Sign In</button>
             </form>
 
@@ -45,7 +50,7 @@
                 Continue with Google
             </button>
 
-            <p class="signup-link">Don't have an account? <a href="#">Create one</a></p>
+            <p class="signup-link">Don't have an account? <a href="#" id="toggle-mode">Create one</a></p>
         </div>
     </div>
 
@@ -77,12 +82,13 @@
             </li>
         </ul>
         <div class="profile-preview">
-            <img src="https://ui-avatars.com/api/?name=Alex+Traveler&background=random" alt="Profile">
+            <img src="https://ui-avatars.com/api/?name=User&background=random" alt="Profile">
             <div class="profile-info">
-                <p class="name">Alex Smith</p>
+                <p class="name">Loading...</p>
                 <p class="status">Pro Explorer</p>
             </div>
         </div>
+        <button class="btn-outline" style="margin:0.5rem 1rem 1rem;font-size:0.8rem;padding:0.5rem;" onclick="signOutUser()"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
     </nav>
 
     <main class="content hidden">
@@ -309,6 +315,6 @@
         </section>
     </main>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
