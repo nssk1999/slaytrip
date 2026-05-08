@@ -60,8 +60,12 @@ let currentRole = 'customer';
 let isSignUpMode = false;
 let pendingAction = null; // callback after successful login
 let selectedDestination = 'Goa';
+let destinationCoords = null; // To store lat/lng from autocomplete
 let selectedStyles = [];
 let lastGeneratedTrip = null;
+let googleMap = null;
+let mapMarkers = [];
+let mapPolyline = null;
 
 // ─── Auth Observer ───────────────────────────────────────────────
 function initAuthObserver() {
@@ -496,8 +500,59 @@ function initPlannerWizard() {
             document.querySelectorAll('.dest-chip').forEach(c => c.classList.remove('active'));
             chip.classList.add('active');
             selectedDestination = chip.getAttribute('data-dest');
+            // Clear text input when chip is clicked to avoid confusion
+            const input = document.getElementById('dest-input');
+            if (input) input.value = '';
         });
     });
+
+    // Google Places Autocomplete
+    const input = document.getElementById('dest-input');
+    if (input && window.google) {
+        const autocomplete = new google.maps.places.Autocomplete(input, {
+            types: ['(cities)']
+        });
+        autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (place.geometry) {
+                selectedDestination = place.name;
+                destinationCoords = {
+                    lat: place.geometry.location.lat(),
+                    lng: place.geometry.location.lng()
+                };
+                // De-activate chips if typing manual destination
+                document.querySelectorAll('.dest-chip').forEach(c => c.classList.remove('active'));
+            }
+        });
+    }
+
+    // Detect Location
+    const detectBtn = document.querySelector('.detect-location');
+    if (detectBtn) {
+        detectBtn.addEventListener('click', () => {
+            if (navigator.geolocation) {
+                detectBtn.classList.add('fa-spin');
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    try {
+                        const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${firebaseConfig.apiKey}`);
+                        const data = await res.json();
+                        if (data.results && data.results[0]) {
+                            const city = data.results[0].address_components.find(c => c.types.includes('locality'))?.long_name;
+                            if (city) {
+                                input.value = city;
+                                selectedDestination = city;
+                                destinationCoords = { lat, lng };
+                                document.querySelectorAll('.dest-chip').forEach(c => c.classList.remove('active'));
+                            }
+                        }
+                    } catch (e) { console.error(e); }
+                    finally { detectBtn.classList.remove('fa-spin'); }
+                });
+            }
+        });
+    }
     document.querySelectorAll('.style-card').forEach(card => {
         card.addEventListener('click', () => {
             card.classList.toggle('selected');
@@ -532,14 +587,18 @@ async function generateTrip() {
     const btn = document.getElementById('generate-btn');
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Building your trip...';
     btn.disabled = true;
+    const destInput = document.getElementById('dest-input');
+    const destination = destInput.value.trim() || selectedDestination;
+
     const payload = {
-        destination: selectedDestination,
+        destination: destination,
         start_date: document.getElementById('start-date').value,
         end_date: document.getElementById('end-date').value,
         budget_level: document.getElementById('budget-level').value,
         travel_style: selectedStyles.length > 0 ? selectedStyles : ['culture'],
         group_type: document.getElementById('group-type').value,
-        constraints: Array.from(document.querySelectorAll('.constraint-card input:checked')).map(cb => cb.value)
+        constraints: Array.from(document.querySelectorAll('.constraint-card input:checked')).map(cb => cb.value),
+        coords: destinationCoords // Optional, for backend if needed
     };
     try {
         const res = await fetch(`${API_BASE_URL}/plan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -547,6 +606,7 @@ async function generateTrip() {
         const data = await res.json();
         lastGeneratedTrip = data; // Store for saving
         renderItinerary(data);
+        initMap(data); // Render Map
         document.querySelectorAll('.wizard-panel').forEach(p => p.classList.remove('active'));
         document.getElementById('step-result').classList.add('active');
         document.querySelector('.wizard-header').style.display = 'none';
@@ -561,20 +621,164 @@ function renderItinerary(data) {
     const gL = { solo: '🧍 Solo', couple: '👫 Couple', family: '👨‍👩‍👧 Family', group: '👥 Group' };
     const INR = n => '₹' + n.toLocaleString('en-IN');
     const badges = data.applied_constraints.map(c => `<span class="constraint-badge">${c}</span>`).join('');
-    const days = data.days.map(day => `
-        <div class="day-block"><div class="day-label"><h3>Day ${day.day_number}</h3><span class="day-date">${day.date}</span></div>
-        <div class="itinerary-timeline">${day.activities.map(a => `
-            <div class="itin-item"><div class="itin-meta"><span class="itin-time"><i class="fas fa-clock"></i> ${a.time}</span><span class="itin-status ${a.status.toLowerCase()}">${a.status}</span></div>
-            <div class="itin-title">${a.title}</div>
-            <div class="itin-footer"><span class="itin-location"><i class="fas fa-location-dot"></i> ${a.location} · ${a.duration}</span><span class="itin-cost">${INR(a.cost)}</span></div></div>`).join('')}
-        </div></div>`).join('');
+    
+    // Add transit sections between activities
+    const days = data.days.map(day => {
+        let activitiesHtml = '';
+        day.activities.forEach((a, idx) => {
+            activitiesHtml += `
+                <div class="itin-item">
+                    <div class="itin-meta">
+                        <span class="itin-time"><i class="fas fa-clock"></i> ${a.time}</span>
+                        <span class="itin-status ${a.status.toLowerCase()}">${a.status}</span>
+                    </div>
+                    <div class="itin-title">${a.title}</div>
+                    <div class="itin-footer">
+                        <span class="itin-location"><i class="fas fa-location-dot"></i> ${a.location} · ${a.duration}</span>
+                        <span class="itin-cost">${INR(a.cost)}</span>
+                    </div>
+                </div>`;
+            
+            // Add Transit Info between items
+            if (idx < day.activities.length - 1 && a.transit_to_next) {
+                const next = day.activities[idx+1];
+                const modeMap = { 
+                    'train': 'fa-train', 'bus': 'fa-bus', 'walk': 'fa-walking', 
+                    'transit': 'fa-train', 'driving': 'fa-car', 'walking': 'fa-walking'
+                };
+                const modeIcon = modeMap[a.transit_to_next.mode.toLowerCase()] || 'fa-person-walking';
+                
+                activitiesHtml += `
+                    <div class="itin-transit">
+                        <div class="transit-line"></div>
+                        <div class="transit-info">
+                            <i class="fas ${modeIcon}"></i>
+                            <span>${a.transit_to_next.duration} transit</span>
+                            <small>Next: ${next.title}</small>
+                        </div>
+                    </div>`;
+            }
+        });
+
+        return `
+            <div class="day-block">
+                <div class="day-label">
+                    <h3>Day ${day.day_number}</h3>
+                    <span class="day-date">${day.date}</span>
+                </div>
+                <div class="itinerary-timeline">${activitiesHtml}</div>
+            </div>`;
+    }).join('');
+
+    const isGlobal = !['Goa', 'Jaipur', 'Hyderabad', 'Leh', 'Munnar', 'Varanasi'].includes(data.destination);
 
     document.getElementById('itinerary-output').innerHTML = `
-        <div class="itinerary-hero"><div><h2>${data.destination}</h2><p>${data.start_date} → ${data.end_date} · ${data.num_days} days</p><p>${gL[data.group_type]} · ${bL[data.budget_level]}</p></div>
-        <div class="budget-pills"><span class="budget-pill">🏃 Activities: ${INR(data.budget_breakdown.activities)}</span><span class="budget-pill">🏨 Hotel: ${INR(data.budget_breakdown.hotel)}</span><span class="budget-pill">🚗 Transport: ${INR(data.budget_breakdown.transport)}</span><span class="budget-pill total">Total: ${INR(data.budget_breakdown.total)}</span></div></div>
+        <div class="itinerary-hero">
+            <div>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <h2>${data.destination}</h2>
+                    ${isGlobal ? '<span class="badge-active" style="font-size:0.6rem; padding:0.2rem 0.5rem;"><i class="fas fa-plane"></i> Global</span>' : ''}
+                </div>
+                <p>${data.start_date} → ${data.end_date} · ${data.num_days} days</p>
+                <p>${gL[data.group_type]} · ${bL[data.budget_level]}</p>
+            </div>
+            <div class="budget-pills">
+                <span class="budget-pill">🏃 Activities: ${INR(data.budget_breakdown.activities)}</span>
+                <span class="budget-pill">🏨 Hotel: ${INR(data.budget_breakdown.hotel)}</span>
+                <span class="budget-pill">🚗 Transport: ${INR(data.budget_breakdown.transport)}</span>
+                <span class="budget-pill total">Total: ${INR(data.budget_breakdown.total)}</span>
+            </div>
+        </div>
+        
+        ${isGlobal ? `
+        <div class="flight-cta">
+            <i class="fas fa-plane-departure"></i>
+            <div class="flight-info">
+                <h4>International Route Found</h4>
+                <p>Check the best flight deals for your slayed trip.</p>
+            </div>
+            <a href="https://www.google.com/travel/flights?q=Flights%20to%20${encodeURIComponent(data.destination)}%20on%20${data.start_date}" target="_blank" class="btn-primary" style="font-size:0.8rem; padding:0.5rem 1rem;">View Flights</a>
+        </div>` : ''}
+
         ${badges ? `<div class="constraint-badges">${badges}</div>` : ''}
-        <div class="hotel-card"><div><h4>🏨 ${data.hotel.name}</h4><p>${data.hotel.type} · ${INR(data.hotel.per_night)}/night × ${data.num_days} nights</p></div><span class="price-tag">${INR(data.hotel.total)}</span></div>
+        <div class="hotel-card">
+            <div>
+                <h4>🏨 ${data.hotel.name}</h4>
+                <p>${data.hotel.type} · ${INR(data.hotel.per_night)}/night × ${data.num_days} nights</p>
+            </div>
+            <span class="price-tag">${INR(data.hotel.total)}</span>
+        </div>
         ${days}`;
+}
+
+// ─── Google Maps Integration ──────────────────────────────────────
+function initMap(tripData) {
+    if (!window.google) return;
+    
+    const mapElement = document.getElementById('itinerary-map');
+    if (!mapElement) return;
+
+    // Default center (can be refined with actual destination coords)
+    const center = destinationCoords || { lat: 15.2993, lng: 74.1240 }; 
+    
+    googleMap = new google.maps.Map(mapElement, {
+        zoom: 12,
+        center: center,
+        styles: [
+            { "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
+            { "elementType": "labels.text.stroke", "stylers": [{ "color": "#1e293b" }] },
+            { "elementType": "labels.text.fill", "stylers": [{ "color": "#64748b" }] },
+            { "featureType": "administrative.locality", "elementType": "labels.text.fill", "stylers": [{ "color": "#94a3b8" }] },
+            { "featureType": "poi", "elementType": "labels.text.fill", "stylers": [{ "color": "#94a3b8" }] },
+            { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#334155" }] },
+            { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#0f172a" }] }
+        ]
+    });
+
+    renderItineraryOnMap(tripData);
+}
+
+function renderItineraryOnMap(data) {
+    // Clear existing markers
+    mapMarkers.forEach(m => m.setMap(null));
+    mapMarkers = [];
+    if (mapPolyline) mapPolyline.setMap(null);
+
+    const bounds = new google.maps.LatLngBounds();
+    const day1 = data.days[0];
+    if (!day1) return;
+
+    // Use real AI-generated coordinates
+    const path = [];
+    day1.activities.forEach((a, i) => {
+        if (!a.lat || !a.lng) return;
+        
+        const pos = { lat: a.lat, lng: a.lng };
+        const marker = new google.maps.Marker({
+            position: pos,
+            map: googleMap,
+            title: a.title,
+            label: (i + 1).toString(),
+            animation: google.maps.Animation.DROP
+        });
+        
+        mapMarkers.push(marker);
+        path.push(pos);
+        bounds.extend(pos);
+    });
+
+    if (path.length > 1) {
+        mapPolyline = new google.maps.Polyline({
+            path: path,
+            geodesic: true,
+            strokeColor: '#6366f1',
+            strokeOpacity: 0.8,
+            strokeWeight: 3,
+            map: googleMap
+        });
+    }
+
+    if (!bounds.isEmpty()) googleMap.fitBounds(bounds);
 }
 
 window.resetPlanner = function() {

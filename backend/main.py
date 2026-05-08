@@ -3,8 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from typing import List, Dict, Any
 from pydantic import BaseModel, Field, field_validator
-import random, os, httpx
+import random, os, httpx, json
 from datetime import datetime, timedelta
+import vertexai
+from vertexai.generative_models import GenerativeModel, Part, GenerationConfig
 
 # ── DEV_MODE: set DEV_MODE=1 locally to skip Firebase token verification ─────
 DEV_MODE = os.environ.get("DEV_MODE", "0") == "1"
@@ -238,7 +240,80 @@ HOTEL_POOL = {
 
 TIME_SLOTS = ["07:30 AM","09:00 AM","11:00 AM","12:30 PM","02:00 PM","04:00 PM","06:30 PM","08:00 PM"]
 
-# ── Engine ────────────────────────────────────────────────────────────────────
+# ── AI Engine (Vertex AI) ───────────────────────────────────────────────────
+PROJECT_ID = "nssk1999promptwars"
+LOCATION = "us-central1"
+
+if not DEV_MODE:
+    vertexai.init(project=PROJECT_ID, location=LOCATION)
+
+async def generate_ai_itinerary(req: PlanRequest) -> Dict[str, Any]:
+    """Calls Gemini 1.5 Flash to generate a high-quality, personalized itinerary."""
+    model = GenerativeModel("gemini-1.5-flash-001")
+    
+    prompt = f"""
+    You are SlayTrip AI, a Gen-Z travel expert. Create a detailed itinerary for a trip to {req.destination}.
+    
+    Details:
+    - Dates: {req.start_date} to {req.end_date}
+    - Budget: {req.budget_level} (Total budget in INR)
+    - Travel Style: {', '.join(req.travel_style)}
+    - Group: {req.group_type}
+    - Constraints: {', '.join(req.constraints)}
+    
+    Requirements:
+    1. Output MUST be valid JSON.
+    2. Follow this structure:
+    {{
+        "destination": "{req.destination}",
+        "start_date": "{req.start_date}",
+        "end_date": "{req.end_date}",
+        "num_days": <int>,
+        "group_type": "{req.group_type}",
+        "budget_level": "{req.budget_level}",
+        "travel_styles": {json.dumps(req.travel_style)},
+        "applied_constraints": ["..."],
+        "hotel": {{ "name": "...", "type": "...", "per_night": <int>, "total": <int> }},
+        "budget_breakdown": {{ "activities": <int>, "hotel": <int>, "transport": <int>, "total": <int> }},
+        "days": [
+            {{
+                "day_number": 1,
+                "date": "...",
+                "activities": [
+                    {{ 
+                      "time": "09:00 AM", 
+                      "title": "...", 
+                      "location": "...", 
+                      "duration": "2h", 
+                      "cost": <int>, 
+                      "status": "Confirmed",
+                      "lat": <float>, 
+                      "lng": <float>,
+                      "transit_to_next": {{ "mode": "bus/train/walk", "duration": "15 min" }}
+                    }}
+                ]
+            }}
+        ]
+    }}
+    
+    Guidelines:
+    - Use INR (₹) for all costs.
+    - Be creative and specific for {req.destination}.
+    - Ensure constraints like '{req.constraints}' are respected.
+    - Include geographic coordinates (lat, lng) for all activities.
+    """
+
+    try:
+        response = model.generate_content(
+            prompt,
+            generation_config=GenerationConfig(response_mime_type="application/json")
+        )
+        return json.loads(response.text)
+    except Exception as e:
+        print(f"AI Generation failed: {e}")
+        return build_itinerary(req) # Fallback to mock logic
+
+# ── Mock Engine (Fallback) ────────────────────────────────────────────────────
 def build_itinerary(req: PlanRequest) -> Dict[str, Any]:
     dest_key   = req.destination.lower().strip()
     pool       = ACTIVITY_POOL.get(dest_key, ACTIVITY_POOL["default"])
@@ -324,6 +399,9 @@ async def get_destinations():
 @app.post("/api/plan")
 async def generate_plan(req: PlanRequest):
     try:
+        # Check if we should use AI or fallback
+        if not DEV_MODE:
+            return await generate_ai_itinerary(req)
         return build_itinerary(req)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -347,6 +425,40 @@ async def get_updates():
         {"id": 3, "type": "Tip",     "content": "Book 48h early for max aesthetic spots."},
         {"id": 4, "type": "Alert",   "content": "Local vibes are peak this weekend!"},
     ]
+
+@app.post("/api/transit")
+async def get_transit_info(payload: dict):
+    """Fetches real transit/route data between two points."""
+    origin = payload.get("origin")
+    destination = payload.get("destination")
+    mode = payload.get("mode", "transit") # transit, driving, walking
+
+    if not origin or not destination:
+        return {"duration": "15 min", "distance": "2 km", "mode": mode, "summary": "Short trip"}
+
+    api_key = os.environ.get("GOOGLE_MAPS_API_KEY")
+    if not api_key:
+        # Fallback to mock if no key
+        return {"duration": "12 min", "distance": "1.5 km", "mode": mode, "summary": "Calculated via fallback"}
+
+    try:
+        async with httpx.AsyncClient() as client:
+            url = f"https://maps.googleapis.com/maps/api/directions/json?origin={origin}&destination={destination}&mode={mode}&key={api_key}"
+            r = await client.get(url)
+            if r.status_code == 200:
+                data = r.json()
+                if data["status"] == "OK":
+                    route = data["routes"][0]["legs"][0]
+                    return {
+                        "duration": route["duration"]["text"],
+                        "distance": route["distance"]["text"],
+                        "mode": mode,
+                        "summary": data["routes"][0]["summary"]
+                    }
+    except Exception as e:
+        print(f"Transit API error: {e}")
+    
+    return {"duration": "20 min", "distance": "3 km", "mode": mode, "summary": "Estimated"}
 
 # PROTECTED — Trip Persistence
 @app.post("/api/save-trip")

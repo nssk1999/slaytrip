@@ -202,16 +202,17 @@
                 </header>
                 <div class="plan-form-grid">
                     <div class="plan-field full-width">
-                        <label><i class="fas fa-map-pin" aria-hidden="true"></i> Destination</label>
-                        <div class="destination-chips" id="dest-chips" role="listbox" aria-label="Select destination">
-                            <div class="dest-chip active" data-dest="Goa" role="option" tabindex="0">🏖️ Goa</div>
-                            <div class="dest-chip" data-dest="Jaipur" role="option" tabindex="0">🏰 Jaipur</div>
-                            <div class="dest-chip" data-dest="Hyderabad" role="option" tabindex="0">🍛 Hyderabad</div>
-                            <div class="dest-chip" data-dest="Leh" role="option" tabindex="0">🏔️ Leh</div>
-                            <div class="dest-chip" data-dest="Munnar" role="option" tabindex="0">🍃 Munnar</div>
-                            <div class="dest-chip" data-dest="Varanasi" role="option" tabindex="0">🕌 Varanasi</div>
-                            <div class="dest-chip" data-dest="Santorini" role="option" tabindex="0">🇬🇷 Santorini</div>
-                            <div class="dest-chip" data-dest="Kyoto" role="option" tabindex="0">🇯🇵 Kyoto</div>
+                        <label><i class="fas fa-search-location"></i> Search Destination</label>
+                        <div class="search-input-wrapper">
+                            <input type="text" id="dest-input" placeholder="Where do you want to slay? (e.g. Paris, Tokyo, Bali)" class="plan-input">
+                            <i class="fas fa-crosshairs detect-location" title="Detect my location"></i>
+                        </div>
+                        <div class="destination-chips" id="dest-chips" style="margin-top: 1rem;">
+                            <span class="chip-label">Trending:</span>
+                            <div class="dest-chip active" data-dest="Goa">🏖️ Goa</div>
+                            <div class="dest-chip" data-dest="Jaipur">🏰 Jaipur</div>
+                            <div class="dest-chip" data-dest="Kyoto">🇯🇵 Kyoto</div>
+                            <div class="dest-chip" data-dest="Santorini">🇬🇷 Santorini</div>
                         </div>
                     </div>
                     <div class="plan-field">
@@ -316,17 +317,21 @@
                 <div class="wizard-nav">
                     <button class="btn-outline" onclick="goToStep(2)"><i class="fas fa-arrow-left"></i> Back</button>
                     <button class="btn-primary btn-generate" id="generate-btn" onclick="generateTrip()">
-                        <i class="fas fa-magic"></i> Generate My Trip
+                <i class="fas fa-magic"></i> Generate My Trip
                     </button>
                 </div>
             </div>
 
-            <!-- Result -->
+            <!-- Output: Generated Itinerary -->
             <div class="wizard-panel" id="step-result">
-                <div id="itinerary-output" aria-live="polite"></div>
-                <!-- Save CTA — changes based on auth state -->
+                <div id="itinerary-map" style="height: 350px; width: 100%; border-radius: 24px; margin-bottom: 2rem; border: 1px solid var(--glass-border); box-shadow: var(--card-shadow);"></div>
+                
+                <div id="itinerary-output">
+                    <!-- Injected by app.js -->
+                </div>
+
                 <div class="result-action-bar" id="result-action-bar">
-                    <button class="btn-outline" onclick="resetPlanner()"><i class="fas fa-redo"></i> Plan Another</button>
+                    <button class="btn-outline" onclick="resetPlanner()"><i class="fas fa-redo"></i> Plan Another Trip</button>
                     <div id="save-trip-area">
                         <!-- Injected by app.js based on auth state -->
                     </div>
@@ -390,6 +395,8 @@
 
     </main>
 
+    <!-- Google Maps API (Replace YOUR_API_KEY) -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAF3qwO8ZxCFiYyq5ZHN1v9VwnrPtBkofI&libraries=places"></script>
     <script type="module" src="app.js"></script>
 </body>
 </html>
