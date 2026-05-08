@@ -35,6 +35,20 @@ const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 const googleProvider = new GoogleAuthProvider();
 
+// ─── Auth Token Helper ────────────────────────────────────────────
+async function getAuthToken() {
+    const user = auth.currentUser;
+    if (!user) return null;
+    return user.getIdToken();
+}
+
+async function authFetch(url, options = {}) {
+    const token = await getAuthToken();
+    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return fetch(url, { ...options, headers });
+}
+
 // ─── Theme Switching Logic ────────────────────────────────────────
 const themes = [
     { name: "Indigo Night", primary: "#6366f1", primaryHover: "#4f46e5", bg: "#0f172a", sidebar: "#1e1b4b", accent: "#818cf8" },
@@ -285,14 +299,16 @@ async function loadTabData(tab) {
 // ─── FETCH ───────────────────────────────────────
 async function fetchDestinations() {
     try {
-        const res = await fetch(`${API_BASE_URL}/destinations`);
+        const res = await authFetch(`${API_BASE_URL}/destinations`);
+        if (!res.ok) throw new Error(res.status);
         renderDestinations(await res.json());
     } catch (e) { console.error('Destinations error:', e); }
 }
 
 async function fetchUpdates() {
     try {
-        const res = await fetch(`${API_BASE_URL}/updates`);
+        const res = await authFetch(`${API_BASE_URL}/updates`);
+        if (!res.ok) throw new Error(res.status);
         renderUpdates(await res.json());
     } catch (e) { console.error('Updates error:', e); }
 }
@@ -404,11 +420,14 @@ window.generateTrip = async function() {
     };
 
     try {
-        const res = await fetch(`${API_BASE_URL}/plan`, {
+        const res = await authFetch(`${API_BASE_URL}/plan`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || res.status);
+        }
         const itinerary = await res.json();
         renderItinerary(itinerary);
         document.querySelectorAll('.wizard-panel').forEach(p => p.classList.remove('active'));
@@ -510,4 +529,8 @@ window.prefillPlannerFromCard = function(destName) {
             }
         });
     }, 50);
+};
+
+window.signOutUser = async function() {
+    await signOut(auth);
 };
