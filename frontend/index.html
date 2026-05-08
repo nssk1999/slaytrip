@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SlayTrip | Slaying the Itinerary</title>
+    <title>SlayTrip | Explore. Plan. Slay.</title>
+    <meta name="description" content="Plan trips dynamically with real-time updates, smart itineraries, and personalised experiences. No account needed to start.">
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,42 +12,55 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="dark-theme">
-    <!-- Login Screen Overlay -->
-    <div id="login-overlay" class="login-overlay">
-        <div class="login-card">
-            <div class="login-header">
-                <i class="fas fa-bolt"></i>
-                <h2>Welcome to SlayTrip</h2>
-                <p>Select your role to continue</p>
-            </div>
-            
-            <div class="role-selector">
-                <div class="role-option active" data-role="customer">Customer</div>
-                <div class="role-option" data-role="provider">Provider</div>
-                <div class="role-option" data-role="manager">Manager</div>
+
+    <!-- ═══════════════════════════════════════════════════
+         AUTH MODAL — slides in only when user tries a protected action
+         ═══════════════════════════════════════════════════ -->
+    <div id="auth-modal-overlay" class="auth-modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Sign in to SlayTrip">
+        <div class="auth-modal-card">
+            <button class="modal-close-btn" onclick="closeAuthModal()" aria-label="Close sign-in modal">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <!-- Context message — changes based on what triggered the modal -->
+            <div class="modal-context-banner" id="modal-context-banner">
+                <i class="fas fa-bookmark"></i>
+                <span id="modal-context-text">Sign in to save your trip</span>
             </div>
 
-            <form id="login-form">
+            <div class="login-header">
+                <i class="fas fa-bolt"></i>
+                <h2 id="modal-heading">Welcome to SlayTrip</h2>
+                <p id="modal-subheading">Create an account or sign in to continue</p>
+            </div>
+
+            <div class="role-selector" role="group" aria-label="Select your role">
+                <div class="role-option active" data-role="customer" role="button" tabindex="0">🧳 Customer</div>
+                <div class="role-option" data-role="provider" role="button" tabindex="0">🛎️ Provider</div>
+                <div class="role-option" data-role="manager" role="button" tabindex="0">🗂️ Manager</div>
+            </div>
+
+            <form id="login-form" novalidate>
                 <div class="input-group" id="name-field" style="display:none;">
-                    <label>Display Name</label>
-                    <input type="text" id="auth-name" placeholder="Your name">
+                    <label for="auth-name">Display Name</label>
+                    <input type="text" id="auth-name" placeholder="Your name" autocomplete="name">
                 </div>
                 <div class="input-group">
-                    <label>Email Address</label>
-                    <input type="email" id="auth-email" placeholder="you@example.com" required>
+                    <label for="auth-email">Email Address</label>
+                    <input type="email" id="auth-email" placeholder="you@example.com" required autocomplete="email">
                 </div>
                 <div class="input-group">
-                    <label>Password</label>
-                    <input type="password" id="auth-password" placeholder="••••••••" required minlength="6">
+                    <label for="auth-password">Password</label>
+                    <input type="password" id="auth-password" placeholder="••••••••" required minlength="6" autocomplete="current-password">
                 </div>
-                <div id="auth-error" class="auth-error" style="display:none;"></div>
+                <div id="auth-error" class="auth-error" style="display:none;" role="alert"></div>
                 <button type="submit" class="btn-primary login-btn">Sign In</button>
             </form>
 
             <div class="divider"><span>OR</span></div>
 
-            <button class="btn-google">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa-google.svg" alt="Google">
+            <button class="btn-google" id="btn-google-signin" aria-label="Continue with Google">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa-google.svg" alt="">
                 Continue with Google
             </button>
 
@@ -54,66 +68,96 @@
         </div>
     </div>
 
-    <nav class="sidebar hidden">
+    <!-- ═══════════════════════════════════════════════════
+         SIDEBAR — always visible
+         ═══════════════════════════════════════════════════ -->
+    <nav class="sidebar" role="navigation" aria-label="Main navigation">
         <div class="logo">
-            <i class="fas fa-bolt"></i>
+            <i class="fas fa-bolt" aria-hidden="true"></i>
             <span>SlayTrip</span>
         </div>
-        <ul class="nav-links">
-            <li class="active" data-tab="explore">
-                <i class="fas fa-earth-americas"></i>
+
+        <ul class="nav-links" role="list">
+            <!-- PUBLIC tabs -->
+            <li class="active" data-tab="explore" role="listitem">
+                <i class="fas fa-earth-americas" aria-hidden="true"></i>
                 <span>Explore</span>
             </li>
-            <li data-tab="planner">
-                <i class="fas fa-calendar-alt"></i>
+            <li data-tab="planner" role="listitem">
+                <i class="fas fa-calendar-alt" aria-hidden="true"></i>
                 <span>Planner</span>
             </li>
-            <li data-tab="updates">
-                <i class="fas fa-bell"></i>
+            <li data-tab="updates" role="listitem">
+                <i class="fas fa-bell" aria-hidden="true"></i>
                 <span>Updates</span>
             </li>
-            <li data-tab="trips">
-                <i class="fas fa-map-marked-alt"></i>
+            <!-- PROTECTED tabs — show lock badge when logged out -->
+            <li data-tab="trips" data-protected="true" role="listitem">
+                <i class="fas fa-map-marked-alt" aria-hidden="true"></i>
                 <span>My Trips</span>
+                <span class="lock-badge" id="lock-trips" aria-label="Sign in required"><i class="fas fa-lock"></i></span>
             </li>
-            <li data-tab="security">
-                <i class="fas fa-shield-halved"></i>
+            <li data-tab="security" data-protected="true" role="listitem">
+                <i class="fas fa-shield-halved" aria-hidden="true"></i>
                 <span>Security</span>
+                <span class="lock-badge" id="lock-security" aria-label="Sign in required"><i class="fas fa-lock"></i></span>
             </li>
         </ul>
-        <div class="profile-preview">
-            <img src="https://ui-avatars.com/api/?name=User&background=random" alt="Profile">
+
+        <!-- Sidebar bottom: login CTA when logged out, profile when logged in -->
+        <div id="sidebar-guest" class="sidebar-guest-cta">
+            <p>Sign in to save trips &amp; get personalised plans</p>
+            <button class="btn-primary sidebar-signin-btn" onclick="openAuthModal('sidebar')" aria-label="Sign in to SlayTrip">
+                <i class="fas fa-sign-in-alt"></i> Sign In / Sign Up
+            </button>
+        </div>
+
+        <div id="sidebar-user" class="profile-preview hidden">
+            <img id="user-avatar" src="https://ui-avatars.com/api/?name=User&background=random" alt="Profile photo">
             <div class="profile-info">
-                <p class="name">Loading...</p>
-                <p class="status">Pro Explorer</p>
+                <p class="name" id="user-name">User</p>
+                <p class="status" id="user-role">Pro Explorer</p>
             </div>
         </div>
-        <button class="btn-outline" style="margin:0.5rem 1rem 1rem;font-size:0.8rem;padding:0.5rem;" onclick="signOutUser()"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+        <button id="signout-btn" class="btn-outline signout-btn hidden" onclick="signOutUser()" aria-label="Sign out">
+            <i class="fas fa-sign-out-alt"></i> Sign Out
+        </button>
     </nav>
 
-    <main class="content hidden">
-        <!-- Explore Tab -->
+    <!-- ═══════════════════════════════════════════════════
+         MAIN CONTENT — always visible
+         ═══════════════════════════════════════════════════ -->
+    <main class="content" role="main">
+
+        <!-- Guest banner — shown at top when not logged in -->
+        <div id="guest-banner" class="guest-banner">
+            <i class="fas fa-sparkles" aria-hidden="true"></i>
+            <span>Explore & plan freely — <strong>sign in</strong> to save your trips and unlock full features</span>
+            <button class="guest-banner-btn" onclick="openAuthModal('banner')" aria-label="Sign in">Sign In</button>
+            <button class="guest-banner-close" onclick="this.parentElement.remove()" aria-label="Dismiss">×</button>
+        </div>
+
+        <!-- ── Explore ─────────────────────────────────── -->
         <section id="explore" class="tab-content active">
             <header class="tab-header">
                 <h1>Discover your next adventure</h1>
-                <p>Curated destinations based on your preferences</p>
+                <p>Curated destinations — no sign-in needed</p>
             </header>
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Where to next?">
+            <div class="search-bar" role="search">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input type="text" id="explore-search" placeholder="Where to next?" aria-label="Search destinations">
             </div>
-            <div class="destinations-grid" id="destinations-container">
-                <!-- Data injected by app.js -->
+            <div class="destinations-grid" id="destinations-container" aria-live="polite">
+                <!-- Injected by app.js -->
             </div>
         </section>
 
-        <!-- Planner Tab — 3-Step Trip Builder -->
+        <!-- ── Planner ─────────────────────────────────── -->
         <section id="planner" class="tab-content">
-            <!-- Wizard Steps Indicator -->
             <div class="wizard-header">
                 <div class="wizard-step active" id="ws-1">
                     <div class="step-num">1</div>
-                    <span>Destination & Dates</span>
+                    <span>Destination &amp; Dates</span>
                 </div>
                 <div class="wizard-connector"></div>
                 <div class="wizard-step" id="ws-2">
@@ -127,36 +171,36 @@
                 </div>
             </div>
 
-            <!-- Step 1: Destination & Dates -->
+            <!-- Step 1 -->
             <div class="wizard-panel active" id="step-1">
                 <header class="tab-header">
-                    <h1>Where & When?</h1>
+                    <h1>Where &amp; When?</h1>
                     <p>Pick your destination and lock in the dates</p>
                 </header>
                 <div class="plan-form-grid">
                     <div class="plan-field full-width">
-                        <label><i class="fas fa-map-pin"></i> Destination</label>
-                        <div class="destination-chips" id="dest-chips">
-                            <div class="dest-chip active" data-dest="Goa">🏖️ Goa</div>
-                            <div class="dest-chip" data-dest="Jaipur">🏰 Jaipur</div>
-                            <div class="dest-chip" data-dest="Hyderabad">🍛 Hyderabad</div>
-                            <div class="dest-chip" data-dest="Leh">🏔️ Leh</div>
-                            <div class="dest-chip" data-dest="Munnar">🍃 Munnar</div>
-                            <div class="dest-chip" data-dest="Varanasi">🕌 Varanasi</div>
-                            <div class="dest-chip" data-dest="Santorini">🇬🇷 Santorini</div>
-                            <div class="dest-chip" data-dest="Kyoto">🇯🇵 Kyoto</div>
+                        <label><i class="fas fa-map-pin" aria-hidden="true"></i> Destination</label>
+                        <div class="destination-chips" id="dest-chips" role="listbox" aria-label="Select destination">
+                            <div class="dest-chip active" data-dest="Goa" role="option" tabindex="0">🏖️ Goa</div>
+                            <div class="dest-chip" data-dest="Jaipur" role="option" tabindex="0">🏰 Jaipur</div>
+                            <div class="dest-chip" data-dest="Hyderabad" role="option" tabindex="0">🍛 Hyderabad</div>
+                            <div class="dest-chip" data-dest="Leh" role="option" tabindex="0">🏔️ Leh</div>
+                            <div class="dest-chip" data-dest="Munnar" role="option" tabindex="0">🍃 Munnar</div>
+                            <div class="dest-chip" data-dest="Varanasi" role="option" tabindex="0">🕌 Varanasi</div>
+                            <div class="dest-chip" data-dest="Santorini" role="option" tabindex="0">🇬🇷 Santorini</div>
+                            <div class="dest-chip" data-dest="Kyoto" role="option" tabindex="0">🇯🇵 Kyoto</div>
                         </div>
                     </div>
                     <div class="plan-field">
-                        <label><i class="fas fa-calendar"></i> Start Date</label>
+                        <label for="start-date"><i class="fas fa-calendar" aria-hidden="true"></i> Start Date</label>
                         <input type="date" id="start-date" class="plan-input">
                     </div>
                     <div class="plan-field">
-                        <label><i class="fas fa-calendar-check"></i> End Date</label>
+                        <label for="end-date"><i class="fas fa-calendar-check" aria-hidden="true"></i> End Date</label>
                         <input type="date" id="end-date" class="plan-input">
                     </div>
                     <div class="plan-field">
-                        <label><i class="fas fa-users"></i> Group Type</label>
+                        <label for="group-type"><i class="fas fa-users" aria-hidden="true"></i> Group Type</label>
                         <select id="group-type" class="plan-input">
                             <option value="solo">Solo Explorer</option>
                             <option value="couple">Couple</option>
@@ -165,7 +209,7 @@
                         </select>
                     </div>
                     <div class="plan-field">
-                        <label><i class="fas fa-wallet"></i> Budget Level</label>
+                        <label for="budget-level"><i class="fas fa-wallet" aria-hidden="true"></i> Budget Level</label>
                         <select id="budget-level" class="plan-input">
                             <option value="budget">Budget (Backpacker)</option>
                             <option value="mid" selected>Mid-Range (Comfort)</option>
@@ -179,34 +223,34 @@
                 </div>
             </div>
 
-            <!-- Step 2: Travel Styles -->
+            <!-- Step 2 -->
             <div class="wizard-panel" id="step-2">
                 <header class="tab-header">
                     <h1>What's Your Vibe?</h1>
                     <p>Pick one or more travel styles (mix it up!)</p>
                 </header>
-                <div class="style-grid">
-                    <div class="style-card" data-style="adventure">
+                <div class="style-grid" role="listbox" aria-label="Travel styles" aria-multiselectable="true">
+                    <div class="style-card" data-style="adventure" role="option" tabindex="0">
                         <div class="style-icon">🧗</div>
                         <h3>Adventure</h3>
                         <p>Trek, dive, raft, fly</p>
                     </div>
-                    <div class="style-card" data-style="culture">
+                    <div class="style-card" data-style="culture" role="option" tabindex="0">
                         <div class="style-icon">🏛️</div>
                         <h3>Culture</h3>
                         <p>Heritage, art, history</p>
                     </div>
-                    <div class="style-card" data-style="food">
+                    <div class="style-card" data-style="food" role="option" tabindex="0">
                         <div class="style-icon">🍜</div>
                         <h3>Food</h3>
                         <p>Street food, fine dining</p>
                     </div>
-                    <div class="style-card" data-style="relax">
+                    <div class="style-card" data-style="relax" role="option" tabindex="0">
                         <div class="style-icon">🧘</div>
                         <h3>Relax</h3>
                         <p>Spa, beaches, sunsets</p>
                     </div>
-                    <div class="style-card" data-style="nightlife">
+                    <div class="style-card" data-style="nightlife" role="option" tabindex="0">
                         <div class="style-icon">🎉</div>
                         <h3>Nightlife</h3>
                         <p>Clubs, rooftops, parties</p>
@@ -218,30 +262,30 @@
                 </div>
             </div>
 
-            <!-- Step 3: Constraints -->
+            <!-- Step 3 -->
             <div class="wizard-panel" id="step-3">
                 <header class="tab-header">
                     <h1>Any Constraints?</h1>
                     <p>We'll plan around your needs (optional)</p>
                 </header>
-                <div class="constraint-grid">
+                <div class="constraint-grid" role="group" aria-label="Trip constraints">
                     <label class="constraint-card">
-                        <input type="checkbox" value="vegetarian">
+                        <input type="checkbox" value="vegetarian" aria-label="Vegetarian meals">
                         <span class="constraint-icon">🌱</span>
                         <span>Vegetarian</span>
                     </label>
                     <label class="constraint-card">
-                        <input type="checkbox" value="no_alcohol">
+                        <input type="checkbox" value="no_alcohol" aria-label="No alcohol">
                         <span class="constraint-icon">🚫</span>
                         <span>No Alcohol</span>
                     </label>
                     <label class="constraint-card">
-                        <input type="checkbox" value="accessible">
+                        <input type="checkbox" value="accessible" aria-label="Wheelchair accessible">
                         <span class="constraint-icon">♿</span>
                         <span>Accessible</span>
                     </label>
                     <label class="constraint-card">
-                        <input type="checkbox" value="child_friendly">
+                        <input type="checkbox" value="child_friendly" aria-label="Child friendly">
                         <span class="constraint-icon">👶</span>
                         <span>Child Friendly</span>
                     </label>
@@ -254,65 +298,39 @@
                 </div>
             </div>
 
-            <!-- Output: Generated Itinerary -->
+            <!-- Result -->
             <div class="wizard-panel" id="step-result">
-                <div id="itinerary-output">
-                    <!-- Injected by app.js -->
-                </div>
-                <div class="wizard-nav" style="margin-top:2rem;">
-                    <button class="btn-outline" onclick="resetPlanner()"><i class="fas fa-redo"></i> Plan Another Trip</button>
-                    <button class="btn-primary"><i class="fas fa-share"></i> Share Itinerary</button>
+                <div id="itinerary-output" aria-live="polite"></div>
+                <!-- Save CTA — changes based on auth state -->
+                <div class="result-action-bar" id="result-action-bar">
+                    <button class="btn-outline" onclick="resetPlanner()"><i class="fas fa-redo"></i> Plan Another</button>
+                    <div id="save-trip-area">
+                        <!-- Injected by app.js based on auth state -->
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Updates Tab -->
+        <!-- ── Updates ─────────────────────────────────── -->
         <section id="updates" class="tab-content">
             <header class="tab-header">
                 <h1>Real-time Updates</h1>
                 <p>Stay informed about your journey</p>
             </header>
-            <div class="updates-list" id="updates-container">
-                <!-- Data injected by app.js -->
-            </div>
+            <div class="updates-list" id="updates-container" aria-live="polite"></div>
         </section>
 
-        <!-- Security Tab -->
+        <!-- ── My Trips (PROTECTED) ────────────────────── -->
+        <section id="trips" class="tab-content">
+            <!-- Content injected by app.js based on auth state -->
+            <div id="trips-content"></div>
+        </section>
+
+        <!-- ── Security (PROTECTED) ───────────────────── -->
         <section id="security" class="tab-content">
-            <header class="tab-header">
-                <h1>Security Center</h1>
-                <p>Protect your journeys and data</p>
-            </header>
-            
-            <div class="security-grid">
-                <div class="security-card">
-                    <div class="security-info">
-                        <h3>Digital Vault</h3>
-                        <p>Securely store your passport and travel docs.</p>
-                    </div>
-                    <button class="btn-outline">Access Vault</button>
-                </div>
-
-                <div class="security-card">
-                    <div class="security-info">
-                        <h3>Device Management</h3>
-                        <p>You are currently logged in on 2 devices.</p>
-                    </div>
-                    <button class="btn-outline">View Details</button>
-                </div>
-
-                <div class="security-card danger-zone">
-                    <div class="security-info">
-                        <h3>Privacy Mode</h3>
-                        <p>Hide your current trip from public feeds.</p>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox">
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-            </div>
+            <div id="security-content"></div>
         </section>
+
     </main>
 
     <script type="module" src="app.js"></script>

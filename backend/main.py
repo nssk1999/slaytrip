@@ -314,27 +314,34 @@ def build_itinerary(req: PlanRequest) -> Dict[str, Any]:
 async def health():
     return {"status": "ok", "service": "slaytrip-api"}
 
+# PUBLIC — no auth required
 @app.get("/api/destinations", response_model=List[Destination])
-async def get_destinations(_: dict = Depends(verify_token)):
+async def get_destinations():
     shuffled = MOCK_DESTINATIONS.copy()
     random.shuffle(shuffled)
     return shuffled
 
 @app.post("/api/plan")
-async def generate_plan(req: PlanRequest, _: dict = Depends(verify_token)):
+async def generate_plan(req: PlanRequest):
     try:
         return build_itinerary(req)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/updates")
-async def get_updates(_: dict = Depends(verify_token)):
+async def get_updates():
     return [
         {"id": 1, "type": "Weather", "content": "Sunny spells expected at your destination. Perfect for outdoor activities!"},
         {"id": 2, "type": "Flight",  "content": "Your saved route is operating normally. Prices dropped 12% this week."},
         {"id": 3, "type": "Tip",     "content": "Book activities 2 days in advance to avoid sold-out spots."},
         {"id": 4, "type": "Alert",   "content": "Local festival this weekend — expect crowds at heritage sites but amazing vibes!"},
     ]
+
+# PROTECTED — requires auth (future: save trips, user profile, etc.)
+# @app.post("/api/trips")
+# async def save_trip(data: dict, user: dict = Depends(verify_token)):
+#     pass
+
 
 # ── Serve frontend ────────────────────────────────────────────────────────────
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
