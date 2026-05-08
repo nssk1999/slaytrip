@@ -1,25 +1,25 @@
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from typing import List, Dict, Any, Literal
-from pydantic import BaseModel, Field, validator
+from typing import List, Dict, Any
+from pydantic import BaseModel, Field, field_validator
 import random, os
 from datetime import datetime, timedelta
 
-import firebase_admin
-from firebase_admin import credentials, auth as firebase_auth
+# ── DEV_MODE: set DEV_MODE=1 locally to skip Firebase token verification ─────
+DEV_MODE = os.environ.get("DEV_MODE", "0") == "1"
 
-# Init Firebase Admin (uses Application Default Credentials on Cloud Run)
-if not firebase_admin._apps:
-    firebase_admin.initialize_app()
+if not DEV_MODE:
+    import firebase_admin
+    from firebase_admin import auth as firebase_auth
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app()
 
 app = FastAPI(title="SlayTrip API")
 
-ALLOWED_ORIGINS = [
-    "https://slaytrip-1013229880593.us-central1.run.app",
-    "http://localhost:8005",
-    "http://127.0.0.1:8005",
-]
+PROD_ORIGIN = "https://slaytrip-1013229880593.us-central1.run.app"
+ALLOWED_ORIGINS = [PROD_ORIGIN, "http://localhost:8005", "http://127.0.0.1:8005"]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -27,15 +27,17 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
-# ── Auth dependency ──────────────────────────────────────────────────────────
+# ── Auth dependency ───────────────────────────────────────────────────────────
 async def verify_token(request: Request) -> dict:
+    """In DEV_MODE, skip token check. In production, verify Firebase ID token."""
+    if DEV_MODE:
+        return {"uid": "dev-user", "email": "dev@slaytrip.local"}
     auth_header = request.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing auth token")
     token = auth_header.split("Bearer ")[1]
     try:
-        decoded = firebase_auth.verify_id_token(token)
-        return decoded
+        return firebase_auth.verify_id_token(token)
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
@@ -49,55 +51,68 @@ class Destination(BaseModel):
     rating: float
     price: str
 
-VALID_BUDGET   = {"budget", "mid", "luxury"}
-VALID_STYLES   = {"adventure", "culture", "food", "relax", "nightlife"}
-VALID_GROUPS   = {"solo", "couple", "family", "group"}
+VALID_BUDGET      = {"budget", "mid", "luxury"}
+VALID_STYLES      = {"adventure", "culture", "food", "relax", "nightlife"}
+VALID_GROUPS      = {"solo", "couple", "family", "group"}
 VALID_CONSTRAINTS = {"vegetarian", "no_alcohol", "accessible", "child_friendly"}
 
 class PlanRequest(BaseModel):
-    destination: str = Field(..., min_length=2, max_length=60)
-    start_date: str
-    end_date: str
-    budget_level: str
-    travel_style: List[str] = Field(..., min_items=1, max_items=5)
-    group_type: str
-    constraints: List[str] = Field(default=[])
+    model_config = {"str_strip_whitespace": True}
 
-    @validator("budget_level")
+    destination:  str       = Field(..., min_length=2, max_length=60)
+    start_date:   str
+    end_date:     str
+    budget_level: str
+    travel_style: List[str] = Field(..., min_length=1, max_length=5)
+    group_type:   str
+    constraints:  List[str] = Field(default=[])
+
+    @field_validator("budget_level")
+    @classmethod
     def valid_budget(cls, v):
         if v not in VALID_BUDGET:
             raise ValueError(f"budget_level must be one of {VALID_BUDGET}")
         return v
 
-    @validator("group_type")
+    @field_validator("group_type")
+    @classmethod
     def valid_group(cls, v):
         if v not in VALID_GROUPS:
             raise ValueError(f"group_type must be one of {VALID_GROUPS}")
         return v
 
-    @validator("travel_style", each_item=True)
+    @field_validator("travel_style", mode="before")
+    @classmethod
     def valid_style(cls, v):
-        if v not in VALID_STYLES:
-            raise ValueError(f"travel_style items must be in {VALID_STYLES}")
+        if isinstance(v, list):
+            for item in v:
+                if item not in VALID_STYLES:
+                    raise ValueError(f"travel_style items must be in {VALID_STYLES}")
         return v
 
-    @validator("constraints", each_item=True)
+    @field_validator("constraints", mode="before")
+    @classmethod
     def valid_constraint(cls, v):
-        if v not in VALID_CONSTRAINTS:
-            raise ValueError(f"constraint must be in {VALID_CONSTRAINTS}")
+        if isinstance(v, list):
+            for item in v:
+                if item not in VALID_CONSTRAINTS:
+                    raise ValueError(f"constraint must be in {VALID_CONSTRAINTS}")
         return v
 
-    @validator("end_date")
-    def valid_dates(cls, end, values):
-        try:
-            start = datetime.strptime(values["start_date"], "%Y-%m-%d")
-            end_dt = datetime.strptime(end, "%Y-%m-%d")
-            if end_dt <= start:
-                raise ValueError("end_date must be after start_date")
-            if (end_dt - start).days > 30:
-                raise ValueError("Trip cannot exceed 30 days")
-        except (ValueError, KeyError) as e:
-            raise ValueError(str(e))
+    @field_validator("end_date")
+    @classmethod
+    def valid_dates(cls, end, info):
+        start_str = info.data.get("start_date")
+        if start_str:
+            try:
+                start  = datetime.strptime(start_str, "%Y-%m-%d")
+                end_dt = datetime.strptime(end, "%Y-%m-%d")
+                if end_dt <= start:
+                    raise ValueError("end_date must be after start_date")
+                if (end_dt - start).days > 30:
+                    raise ValueError("Trip cannot exceed 30 days")
+            except ValueError as e:
+                raise e
         return end
 
 # ── Data ─────────────────────────────────────────────────────────────────────
