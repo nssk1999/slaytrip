@@ -14,7 +14,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
-    apiKey: "REDACTED_API_KEY",
+    apiKey: "AIzaSyAF3qwO8ZxCFiYyq5ZHN1v9VwnrPtBkofI",
     authDomain: "nssk1999promptwars.firebaseapp.com",
     projectId: "nssk1999promptwars",
     storageBucket: "nssk1999promptwars.firebasestorage.app",
@@ -235,8 +235,26 @@ function initAuth() {
         setAuthError(''); setAuthLoading(true);
         try {
             const res = await signInWithPopup(auth, googleProvider);
-            await saveUserProfile(res.user, currentRole, res.user.displayName);
-        } catch (err) { setAuthError(friendlyError(err.code)); }
+            const user = res.user;
+            
+            // Check if user already exists in Firestore to preserve role
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (!userDoc.exists()) {
+                // New user: set default role or currently selected role
+                await saveUserProfile(user, currentRole, user.displayName);
+            } else {
+                // Existing user: just update profile info but NOT the role
+                await setDoc(doc(db, "users", user.uid), {
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL,
+                    lastLogin: new Date().toISOString()
+                }, { merge: true });
+            }
+        } catch (err) { 
+            console.error("Google Auth Error:", err);
+            setAuthError(friendlyError(err.code)); 
+        }
         finally { setAuthLoading(false); }
     });
 
