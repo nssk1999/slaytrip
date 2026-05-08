@@ -12,6 +12,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="dark-theme">
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <div class="logo">
+            <i class="fas fa-bolt"></i>
+            <span>SlayTrip</span>
+        </div>
+        <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle Menu">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+
+    <!-- Sidebar Backdrop for Mobile -->
+    <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
+
 
     <!-- ═══════════════════════════════════════════════════
          AUTH MODAL — slides in only when user tries a protected action
@@ -79,11 +93,11 @@
 
         <ul class="nav-links" role="list">
             <!-- PUBLIC tabs -->
-            <li class="active" data-tab="explore" role="listitem">
+            <li data-tab="explore" role="listitem">
                 <i class="fas fa-earth-americas" aria-hidden="true"></i>
                 <span>Explore</span>
             </li>
-            <li data-tab="planner" role="listitem">
+            <li class="active" data-tab="planner" role="listitem">
                 <i class="fas fa-calendar-alt" aria-hidden="true"></i>
                 <span>Planner</span>
             </li>
@@ -138,10 +152,10 @@
         </div>
 
         <!-- ── Explore ─────────────────────────────────── -->
-        <section id="explore" class="tab-content active">
+        <section id="explore" class="tab-content">
             <header class="tab-header">
-                <h1>Discover your next adventure</h1>
-                <p>Curated destinations — no sign-in needed</p>
+                <h1>Vibe Check: Destinations</h1>
+                <p>Curated spots for your main character energy — no sign-in needed</p>
             </header>
             <div class="search-bar" role="search">
                 <i class="fas fa-search" aria-hidden="true"></i>
@@ -153,7 +167,7 @@
         </section>
 
         <!-- ── Planner ─────────────────────────────────── -->
-        <section id="planner" class="tab-content">
+        <section id="planner" class="tab-content active">
             <div class="wizard-header">
                 <div class="wizard-step active" id="ws-1">
                     <div class="step-num">1</div>
@@ -174,8 +188,8 @@
             <!-- Step 1 -->
             <div class="wizard-panel active" id="step-1">
                 <header class="tab-header">
-                    <h1>Where &amp; When?</h1>
-                    <p>Pick your destination and lock in the dates</p>
+                    <h1>Slay Your Trip ⚡</h1>
+                    <p>Pick your destination and lock in the dates. No cap.</p>
                 </header>
                 <div class="plan-form-grid">
                     <div class="plan-field full-width">
@@ -227,7 +241,7 @@
             <div class="wizard-panel" id="step-2">
                 <header class="tab-header">
                     <h1>What's Your Vibe?</h1>
-                    <p>Pick one or more travel styles (mix it up!)</p>
+                    <p>Pick your aesthetic (mix it up for maximum aura)</p>
                 </header>
                 <div class="style-grid" role="listbox" aria-label="Travel styles" aria-multiselectable="true">
                     <div class="style-card" data-style="adventure" role="option" tabindex="0">
@@ -311,11 +325,10 @@
             </div>
         </section>
 
-        <!-- ── Updates ─────────────────────────────────── -->
         <section id="updates" class="tab-content">
             <header class="tab-header">
-                <h1>Real-time Updates</h1>
-                <p>Stay informed about your journey</p>
+                <h1>The Tea: Trip Updates</h1>
+                <p>Stay informed so your plans don't flop</p>
             </header>
             <div class="updates-list" id="updates-container" aria-live="polite"></div>
         </section>

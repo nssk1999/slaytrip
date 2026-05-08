@@ -294,6 +294,14 @@ function switchToTab(target) {
     if (tab) tab.classList.add('active');
     tabContents.forEach(c => { c.classList.remove('active'); if (c.id === target) c.classList.add('active'); });
     loadTabData(target);
+    
+    // Mobile: Close sidebar after selection
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+        overlay.classList.add('hidden');
+    }
 }
 
 async function loadTabData(tab) {
@@ -531,5 +539,24 @@ window.addEventListener('DOMContentLoaded', () => {
     applyRandomTheme();
     initAuth();
     initAuthObserver();
-    loadTabData('explore');
+    loadTabData('planner');
+    initMobileSidebar();
 });
+
+function initMobileSidebar() {
+    const toggle = document.getElementById('sidebar-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (toggle && sidebar && overlay) {
+        toggle.addEventListener('click', () => {
+            sidebar.classList.add('open');
+            overlay.classList.remove('hidden');
+        });
+
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            overlay.classList.add('hidden');
+        });
+    }
+}
