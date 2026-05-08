@@ -116,6 +116,15 @@
                 <span>Security</span>
                 <span class="lock-badge" id="lock-security" aria-label="Sign in required"><i class="fas fa-lock"></i></span>
             </li>
+            <!-- ROLE-SPECIFIC tabs -->
+            <li data-tab="bookings" class="role-provider-only hidden" role="listitem">
+                <i class="fas fa-list-check" aria-hidden="true"></i>
+                <span>Bookings</span>
+            </li>
+            <li data-tab="manager-view" class="role-manager-only hidden" role="listitem">
+                <i class="fas fa-gauge-high" aria-hidden="true"></i>
+                <span>Dashboard</span>
+            </li>
         </ul>
 
         <!-- Sidebar bottom: login CTA when logged out, profile when logged in -->
@@ -335,11 +344,46 @@
 
         <!-- ── My Trips (PROTECTED) ────────────────────── -->
         <section id="trips" class="tab-content">
-            <!-- Content injected by app.js based on auth state -->
             <div id="trips-content"></div>
         </section>
 
-        <!-- ── Security (PROTECTED) ───────────────────── -->
+        <!-- ── Provider: Bookings ──────────────────────── -->
+        <section id="bookings" class="tab-content">
+            <header class="tab-header">
+                <h1>Service Bookings</h1>
+                <p>Manage your incoming travel service requests</p>
+            </header>
+            <div class="empty-state">
+                <i class="fas fa-calendar-check"></i>
+                <h3>No active bookings</h3>
+                <p>New service requests from customers will appear here.</p>
+            </div>
+        </section>
+
+        <!-- ── Manager: Dashboard ──────────────────────── -->
+        <section id="manager-view" class="tab-content">
+            <header class="tab-header">
+                <h1>Support Dashboard</h1>
+                <p>System-wide trip management and support</p>
+            </header>
+            <div class="security-grid">
+                <div class="security-card">
+                    <div class="security-info">
+                        <h3>Active Trips</h3>
+                        <p>142 trips currently in progress</p>
+                    </div>
+                </div>
+                <div class="security-card">
+                    <div class="security-info">
+                        <h3>Pending Support</h3>
+                        <p>3 open tickets from customers</p>
+                    </div>
+                    <button class="btn-primary">View Tickets</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── 	Security (PROTECTED) ───────────────────── -->
         <section id="security" class="tab-content">
             <div id="security-content"></div>
         </section>

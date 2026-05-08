@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from typing import List, Dict, Any
 from pydantic import BaseModel, Field, field_validator
-import random, os
+import random, os, httpx
 from datetime import datetime, timedelta
 
 # ── DEV_MODE: set DEV_MODE=1 locally to skip Firebase token verification ─────
@@ -330,17 +330,45 @@ async def generate_plan(req: PlanRequest):
 
 @app.get("/api/updates")
 async def get_updates():
+    weather_info = "Weather data unavailable."
+    try:
+        # Real weather for a default location (e.g., Goa 15.29, 73.98)
+        async with httpx.AsyncClient() as client:
+            r = await client.get("https://api.open-meteo.com/v1/forecast?latitude=15.29&longitude=73.98&current_weather=true")
+            if r.status_code == 200:
+                data = r.json().get("current_weather", {})
+                weather_info = f"Current temp in Goa: {data.get('temperature')}°C. Slay the day!"
+    except:
+        pass
+
     return [
-        {"id": 1, "type": "Weather", "content": "Sunny spells expected at your destination. Perfect for outdoor activities!"},
-        {"id": 2, "type": "Flight",  "content": "Your saved route is operating normally. Prices dropped 12% this week."},
-        {"id": 3, "type": "Tip",     "content": "Book activities 2 days in advance to avoid sold-out spots."},
-        {"id": 4, "type": "Alert",   "content": "Local festival this weekend — expect crowds at heritage sites but amazing vibes!"},
+        {"id": 1, "type": "Weather", "content": weather_info},
+        {"id": 2, "type": "Flight",  "content": "Routes are operational. Aura is high."},
+        {"id": 3, "type": "Tip",     "content": "Book 48h early for max aesthetic spots."},
+        {"id": 4, "type": "Alert",   "content": "Local vibes are peak this weekend!"},
     ]
 
-# PROTECTED — requires auth (future: save trips, user profile, etc.)
-# @app.post("/api/trips")
-# async def save_trip(data: dict, user: dict = Depends(verify_token)):
-#     pass
+# PROTECTED — Trip Persistence
+@app.post("/api/save-trip")
+async def save_trip(trip_data: dict, user: dict = Depends(verify_token)):
+    try:
+        uid = user['uid']
+        trip_id = f"trip_{int(datetime.now().timestamp())}"
+        trip_data['saved_at'] = datetime.now().isoformat()
+        db.collection("users").document(uid).collection("trips").document(trip_id).set(trip_data)
+        return {"status": "success", "trip_id": trip_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/my-trips")
+async def get_my_trips(user: dict = Depends(verify_token)):
+    try:
+        uid = user['uid']
+        docs = db.collection("users").document(uid).collection("trips").stream()
+        trips = [doc.to_dict() for doc in docs]
+        return sorted(trips, key=lambda x: x.get('saved_at', ''), reverse=True)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ── Serve frontend ────────────────────────────────────────────────────────────

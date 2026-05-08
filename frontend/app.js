@@ -61,6 +61,7 @@ let isSignUpMode = false;
 let pendingAction = null; // callback after successful login
 let selectedDestination = 'Goa';
 let selectedStyles = [];
+let lastGeneratedTrip = null;
 
 // ─── Auth Observer ───────────────────────────────────────────────
 function initAuthObserver() {
@@ -115,6 +116,14 @@ function updateUserAvatar() {
 function updateSidebarForRole() {
     const labels = { customer: 'Pro Explorer', provider: 'Service Partner', manager: 'Travel Manager' };
     document.getElementById('user-role').textContent = labels[currentRole] || 'User';
+
+    // Show/Hide role specific tabs
+    document.querySelectorAll('.role-provider-only').forEach(el => {
+        el.classList.toggle('hidden', currentRole !== 'provider');
+    });
+    document.querySelectorAll('.role-manager-only').forEach(el => {
+        el.classList.toggle('hidden', currentRole !== 'manager');
+    });
 }
 
 // ─── Save Trip CTA (changes based on auth state) ────────────────
@@ -309,8 +318,10 @@ async function loadTabData(tab) {
         case 'explore': await fetchDestinations(); break;
         case 'planner': initPlannerWizard(); break;
         case 'updates': await fetchUpdates(); break;
-        case 'trips':   renderTripsTab(); break;
+        case 'trips':   await renderTripsTab(); break;
         case 'security': renderSecurityTab(); break;
+        case 'bookings': break; // Placeholder for future provider logic
+        case 'manager-view': break; // Placeholder for future manager logic
     }
 }
 
@@ -364,20 +375,60 @@ function renderUpdates(updates) {
 }
 
 // ─── Render: My Trips (protected) ────────────────────────────────
-function renderTripsTab() {
+async function renderTripsTab() {
     const c = document.getElementById('trips-content');
-    c.innerHTML = `
-        <header class="tab-header">
-            <h1>My Saved Trips</h1>
-            <p>All your generated itineraries in one place</p>
-        </header>
-        <div class="empty-state">
-            <i class="fas fa-suitcase-rolling"></i>
-            <h3>No trips saved yet</h3>
-            <p>Generate a trip in the Planner and save it here!</p>
-            <button class="btn-primary" onclick="switchToTab('planner')"><i class="fas fa-calendar-alt"></i> Go to Planner</button>
-        </div>`;
+    c.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i> Fetching your slayed trips...</div>';
+    
+    try {
+        const res = await authFetch(`${API_BASE_URL}/my-trips`);
+        if (!res.ok) throw new Error("Failed to fetch trips");
+        const trips = await res.json();
+        
+        if (trips.length === 0) {
+            c.innerHTML = `
+                <header class="tab-header">
+                    <h1>My Saved Trips</h1>
+                    <p>All your generated itineraries in one place</p>
+                </header>
+                <div class="empty-state">
+                    <i class="fas fa-suitcase-rolling"></i>
+                    <h3>No trips saved yet</h3>
+                    <p>Generate a trip in the Planner and save it here!</p>
+                    <button class="btn-primary" onclick="switchToTab('planner')"><i class="fas fa-calendar-alt"></i> Go to Planner</button>
+                </div>`;
+            return;
+        }
+
+        c.innerHTML = `
+            <header class="tab-header">
+                <h1>My Saved Trips</h1>
+                <p>You have slayed ${trips.length} itineraries</p>
+            </header>
+            <div class="trips-grid">
+                ${trips.map(t => `
+                    <div class="trip-summary-card" onclick="viewSavedTrip(${JSON.stringify(t).replace(/"/g, '&quot;')})">
+                        <div class="trip-badge">${t.destination}</div>
+                        <h3>Trip to ${t.destination}</h3>
+                        <p>${t.start_date} · ${t.num_days} days</p>
+                        <div class="trip-meta">
+                            <span>₹${t.budget_breakdown.total.toLocaleString()}</span>
+                            <span><i class="fas fa-chevron-right"></i></span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>`;
+    } catch (e) {
+        c.innerHTML = `<div class="error-state">Failed to load trips. ${e.message}</div>`;
+    }
 }
+
+window.viewSavedTrip = function(trip) {
+    switchToTab('planner');
+    renderItinerary(trip);
+    document.querySelectorAll('.wizard-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('step-result').classList.add('active');
+    document.querySelector('.wizard-header').style.display = 'none';
+};
 
 // ─── Render: Security (protected) ────────────────────────────────
 function renderSecurityTab() {
@@ -459,7 +510,7 @@ window.goToStep = function(n) {
     });
 };
 
-window.generateTrip = async function() {
+async function generateTrip() {
     const btn = document.getElementById('generate-btn');
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Building your trip...';
     btn.disabled = true;
@@ -476,6 +527,7 @@ window.generateTrip = async function() {
         const res = await fetch(`${API_BASE_URL}/plan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || res.status); }
         const data = await res.json();
+        lastGeneratedTrip = data; // Store for saving
         renderItinerary(data);
         document.querySelectorAll('.wizard-panel').forEach(p => p.classList.remove('active'));
         document.getElementById('step-result').classList.add('active');
@@ -483,7 +535,8 @@ window.generateTrip = async function() {
         updateSaveTripArea();
     } catch (e) { alert('Could not generate trip. ' + e.message); console.error(e); }
     finally { btn.innerHTML = '<i class="fas fa-magic"></i> Generate My Trip'; btn.disabled = false; }
-};
+}
+window.generateTrip = generateTrip;
 
 function renderItinerary(data) {
     const bL = { budget: '🎒 Backpacker', mid: '✈️ Comfort', luxury: '💎 Luxury' };
@@ -528,7 +581,30 @@ window.prefillPlannerFromCard = function(destName) {
     }, 50);
 };
 
-window.saveCurrentTrip = function() { alert('Trip saved! (Firestore persistence coming in P2)'); };
+window.saveCurrentTrip = async function() {
+    if (!lastGeneratedTrip) return;
+    const btn = document.querySelector('#save-trip-area .btn-primary');
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    btn.disabled = true;
+
+    try {
+        const res = await authFetch(`${API_BASE_URL}/save-trip`, {
+            method: 'POST',
+            body: JSON.stringify(lastGeneratedTrip)
+        });
+        if (!res.ok) throw new Error("Failed to save trip");
+        btn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        }, 2000);
+    } catch (e) {
+        alert(e.message);
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    }
+};
 window.shareTrip = function() { navigator.clipboard?.writeText(window.location.href); alert('Link copied!'); };
 window.switchToTab = switchToTab;
 

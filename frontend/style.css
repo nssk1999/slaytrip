@@ -1341,3 +1341,65 @@ input:checked+.slider:before {
         font-size: 1.5rem;
     }
 }
+
+/* ─── My Trips Grid ─── */
+.trips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.trip-summary-card {
+    background: var(--card-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.trip-summary-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.trip-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.25rem 0.75rem;
+    background: var(--primary-color);
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: white;
+}
+
+.trip-summary-card h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.trip-summary-card p {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.trip-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.loading-state, .error-state {
+    padding: 3rem;
+    text-align: center;
+    color: var(--text-muted);
+}
