@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SlayTrip | Slaying the Itinerary</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dark-theme">
+    <!-- Login Screen Overlay -->
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-card">
+            <div class="login-header">
+                <i class="fas fa-bolt"></i>
+                <h2>Welcome to SlayTrip</h2>
+                <p>Select your role to continue</p>
+            </div>
+            
+            <div class="role-selector">
+                <div class="role-option active" data-role="customer">Customer</div>
+                <div class="role-option" data-role="provider">Provider</div>
+                <div class="role-option" data-role="manager">Manager</div>
+            </div>
+
+            <form id="login-form">
+                <div class="input-group">
+                    <label>Username or Email</label>
+                    <input type="text" placeholder="Enter your handle" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-primary login-btn">Sign In</button>
+            </form>
+
+            <div class="divider"><span>OR</span></div>
+
+            <button class="btn-google">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pwa-google.svg" alt="Google">
+                Continue with Google
+            </button>
+
+            <p class="signup-link">Don't have an account? <a href="#">Create one</a></p>
+        </div>
+    </div>
+
+    <nav class="sidebar hidden">
+        <div class="logo">
+            <i class="fas fa-bolt"></i>
+            <span>SlayTrip</span>
+        </div>
+        <ul class="nav-links">
+            <li class="active" data-tab="explore">
+                <i class="fas fa-earth-americas"></i>
+                <span>Explore</span>
+            </li>
+            <li data-tab="planner">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Planner</span>
+            </li>
+            <li data-tab="updates">
+                <i class="fas fa-bell"></i>
+                <span>Updates</span>
+            </li>
+            <li data-tab="trips">
+                <i class="fas fa-map-marked-alt"></i>
+                <span>My Trips</span>
+            </li>
+            <li data-tab="security">
+                <i class="fas fa-shield-halved"></i>
+                <span>Security</span>
+            </li>
+        </ul>
+        <div class="profile-preview">
+            <img src="https://ui-avatars.com/api/?name=Alex+Traveler&background=random" alt="Profile">
+            <div class="profile-info">
+                <p class="name">Alex Smith</p>
+                <p class="status">Pro Explorer</p>
+            </div>
+        </div>
+    </nav>
+
+    <main class="content hidden">
+        <!-- Explore Tab -->
+        <section id="explore" class="tab-content active">
+            <header class="tab-header">
+                <h1>Discover your next adventure</h1>
+                <p>Curated destinations based on your preferences</p>
+            </header>
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Where to next?">
+            </div>
+            <div class="destinations-grid" id="destinations-container">
+                <!-- Data injected by app.js -->
+            </div>
+        </section>
+
+        <!-- Planner Tab — 3-Step Trip Builder -->
+        <section id="planner" class="tab-content">
+            <!-- Wizard Steps Indicator -->
+            <div class="wizard-header">
+                <div class="wizard-step active" id="ws-1">
+                    <div class="step-num">1</div>
+                    <span>Destination & Dates</span>
+                </div>
+                <div class="wizard-connector"></div>
+                <div class="wizard-step" id="ws-2">
+                    <div class="step-num">2</div>
+                    <span>Preferences</span>
+                </div>
+                <div class="wizard-connector"></div>
+                <div class="wizard-step" id="ws-3">
+                    <div class="step-num">3</div>
+                    <span>Constraints</span>
+                </div>
+            </div>
+
+            <!-- Step 1: Destination & Dates -->
+            <div class="wizard-panel active" id="step-1">
+                <header class="tab-header">
+                    <h1>Where & When?</h1>
+                    <p>Pick your destination and lock in the dates</p>
+                </header>
+                <div class="plan-form-grid">
+                    <div class="plan-field full-width">
+                        <label><i class="fas fa-map-pin"></i> Destination</label>
+                        <div class="destination-chips" id="dest-chips">
+                            <div class="dest-chip active" data-dest="Goa">🏖️ Goa</div>
+                            <div class="dest-chip" data-dest="Jaipur">🏰 Jaipur</div>
+                            <div class="dest-chip" data-dest="Hyderabad">🍛 Hyderabad</div>
+                            <div class="dest-chip" data-dest="Leh">🏔️ Leh</div>
+                            <div class="dest-chip" data-dest="Munnar">🍃 Munnar</div>
+                            <div class="dest-chip" data-dest="Varanasi">🕌 Varanasi</div>
+                            <div class="dest-chip" data-dest="Santorini">🇬🇷 Santorini</div>
+                            <div class="dest-chip" data-dest="Kyoto">🇯🇵 Kyoto</div>
+                        </div>
+                    </div>
+                    <div class="plan-field">
+                        <label><i class="fas fa-calendar"></i> Start Date</label>
+                        <input type="date" id="start-date" class="plan-input">
+                    </div>
+                    <div class="plan-field">
+                        <label><i class="fas fa-calendar-check"></i> End Date</label>
+                        <input type="date" id="end-date" class="plan-input">
+                    </div>
+                    <div class="plan-field">
+                        <label><i class="fas fa-users"></i> Group Type</label>
+                        <select id="group-type" class="plan-input">
+                            <option value="solo">Solo Explorer</option>
+                            <option value="couple">Couple</option>
+                            <option value="family">Family</option>
+                            <option value="group">Friend Group</option>
+                        </select>
+                    </div>
+                    <div class="plan-field">
+                        <label><i class="fas fa-wallet"></i> Budget Level</label>
+                        <select id="budget-level" class="plan-input">
+                            <option value="budget">Budget (Backpacker)</option>
+                            <option value="mid" selected>Mid-Range (Comfort)</option>
+                            <option value="luxury">Luxury (Splurge)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="wizard-nav">
+                    <div></div>
+                    <button class="btn-primary" onclick="goToStep(2)">Next: Preferences <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Step 2: Travel Styles -->
+            <div class="wizard-panel" id="step-2">
+                <header class="tab-header">
+                    <h1>What's Your Vibe?</h1>
+                    <p>Pick one or more travel styles (mix it up!)</p>
+                </header>
+                <div class="style-grid">
+                    <div class="style-card" data-style="adventure">
+                        <div class="style-icon">🧗</div>
+                        <h3>Adventure</h3>
+                        <p>Trek, dive, raft, fly</p>
+                    </div>
+                    <div class="style-card" data-style="culture">
+                        <div class="style-icon">🏛️</div>
+                        <h3>Culture</h3>
+                        <p>Heritage, art, history</p>
+                    </div>
+                    <div class="style-card" data-style="food">
+                        <div class="style-icon">🍜</div>
+                        <h3>Food</h3>
+                        <p>Street food, fine dining</p>
+                    </div>
+                    <div class="style-card" data-style="relax">
+                        <div class="style-icon">🧘</div>
+                        <h3>Relax</h3>
+                        <p>Spa, beaches, sunsets</p>
+                    </div>
+                    <div class="style-card" data-style="nightlife">
+                        <div class="style-icon">🎉</div>
+                        <h3>Nightlife</h3>
+                        <p>Clubs, rooftops, parties</p>
+                    </div>
+                </div>
+                <div class="wizard-nav">
+                    <button class="btn-outline" onclick="goToStep(1)"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button class="btn-primary" onclick="goToStep(3)">Next: Constraints <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Step 3: Constraints -->
+            <div class="wizard-panel" id="step-3">
+                <header class="tab-header">
+                    <h1>Any Constraints?</h1>
+                    <p>We'll plan around your needs (optional)</p>
+                </header>
+                <div class="constraint-grid">
+                    <label class="constraint-card">
+                        <input type="checkbox" value="vegetarian">
+                        <span class="constraint-icon">🌱</span>
+                        <span>Vegetarian</span>
+                    </label>
+                    <label class="constraint-card">
+                        <input type="checkbox" value="no_alcohol">
+                        <span class="constraint-icon">🚫</span>
+                        <span>No Alcohol</span>
+                    </label>
+                    <label class="constraint-card">
+                        <input type="checkbox" value="accessible">
+                        <span class="constraint-icon">♿</span>
+                        <span>Accessible</span>
+                    </label>
+                    <label class="constraint-card">
+                        <input type="checkbox" value="child_friendly">
+                        <span class="constraint-icon">👶</span>
+                        <span>Child Friendly</span>
+                    </label>
+                </div>
+                <div class="wizard-nav">
+                    <button class="btn-outline" onclick="goToStep(2)"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button class="btn-primary btn-generate" id="generate-btn" onclick="generateTrip()">
+                        <i class="fas fa-magic"></i> Generate My Trip
+                    </button>
+                </div>
+            </div>
+
+            <!-- Output: Generated Itinerary -->
+            <div class="wizard-panel" id="step-result">
+                <div id="itinerary-output">
+                    <!-- Injected by app.js -->
+                </div>
+                <div class="wizard-nav" style="margin-top:2rem;">
+                    <button class="btn-outline" onclick="resetPlanner()"><i class="fas fa-redo"></i> Plan Another Trip</button>
+                    <button class="btn-primary"><i class="fas fa-share"></i> Share Itinerary</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Updates Tab -->
+        <section id="updates" class="tab-content">
+            <header class="tab-header">
+                <h1>Real-time Updates</h1>
+                <p>Stay informed about your journey</p>
+            </header>
+            <div class="updates-list" id="updates-container">
+                <!-- Data injected by app.js -->
+            </div>
+        </section>
+
+        <!-- Security Tab -->
+        <section id="security" class="tab-content">
+            <header class="tab-header">
+                <h1>Security Center</h1>
+                <p>Protect your journeys and data</p>
+            </header>
+            
+            <div class="security-grid">
+                <div class="security-card">
+                    <div class="security-info">
+                        <h3>Digital Vault</h3>
+                        <p>Securely store your passport and travel docs.</p>
+                    </div>
+                    <button class="btn-outline">Access Vault</button>
+                </div>
+
+                <div class="security-card">
+                    <div class="security-info">
+                        <h3>Device Management</h3>
+                        <p>You are currently logged in on 2 devices.</p>
+                    </div>
+                    <button class="btn-outline">View Details</button>
+                </div>
+
+                <div class="security-card danger-zone">
+                    <div class="security-info">
+                        <h3>Privacy Mode</h3>
+                        <p>Hide your current trip from public feeds.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
